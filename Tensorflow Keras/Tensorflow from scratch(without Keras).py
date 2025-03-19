@@ -31,6 +31,7 @@ class TFmodel:
             else:
                 self.parameter[f'W{i+1}'] = tf.Variable(tf.random.normal(shape=(neuron_size[i-1],neuron_size[i])),name=f'W{i+1}')
             self.parameter[f'b{i+1}'] = tf.Variable(tf.random.normal(shape=(1,neuron_size[i])),name=f'b{i+1}')
+            
     def forward(self,x):
         X_tf = tf.cast(x,dtype=tf.float32)
         iter_ = X_tf 
@@ -47,10 +48,30 @@ class TFmodel:
         with tf.GradientTape() as tape:
             predict = self.forward(x)
             losses = loss(predict,y)
+# =============================================================================
+#         在 TensorFlow 中，計算圖是動態創建的，每一次進行反向傳播時（每一次步驟），
+#         GradientTape 都會記錄一次運算圖，並且只在當前步驟內有效。這意味著，在一次訓練步驟完成後，GradientTape 會自動釋放計算圖，也就不再記錄梯度了。
+# =============================================================================
+            
         grads = tape.gradient(losses, list(self.parameter.values()))
+# =============================================================================
+#         tf.GradientTape 不會永久存儲梯度。它記錄運算來構建計算圖，並在呼叫 tape.gradient() 時計算並返回梯度。
+# =============================================================================
+
+        
         self.grads = grads
         optimizer.apply_gradients(zip(grads, self.parameter.values()))
-    
+ 
+def batch(data, batch_size):
+    batch_data = []
+    num_full_size = len(data) // batch_size
+    remain_size = len(data) % batch_size
+    for i in range(num_full_size):
+        batch_data.append(data[i*batch_size:i*batch_size+batch_size])
+    if remain_size != 0:
+        batch_data.append(data[num_full_size*batch_size:num_full_size*batch_size+remain_size])
+    return batch_data    
+ 
 model = TFmodel(10,[20,5,2])
 
 X = tf.random.normal([50,10])
@@ -65,15 +86,7 @@ model.forward(tf.random.normal([50,10], stddev=0.1))
 model.backword(X,y)
 
 
-def batch(data, batch_size):
-    batch_data = []
-    num_full_size = len(data) // batch_size
-    remain_size = len(data) % batch_size
-    for i in range(num_full_size):
-        batch_data.append(data[i*batch_size:i*batch_size+batch_size])
-    if remain_size != 0:
-        batch_data.append(data[num_full_size*batch_size:num_full_size*batch_size+remain_size])
-    return batch_data
+
         
 batch_data = batch(data=X, batch_size=5)
 len(batch_data)

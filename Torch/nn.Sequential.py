@@ -35,3 +35,18 @@ class CBR(nn.Sequential):
 CBR_object = CBR(3,10,3)
 
 nn.Sequential()
+
+
+class L(nn.Sequential):
+    def __init__(self):
+        super(L,self).__init__(
+            nn.Linear(10,20),
+            nn.ReLU(),
+            nn.Linear(20,2)
+            )
+# 這種寫法我可以理解為 繼承 nn.Sequential，
+# 在nn.Sequential原生寫法 初始化參數裡面可以餵給他多個 nn模型
+# 那新建立的L物件 一開始會先執行 將super裡面的多個模型引數帶到父類別裡面，
+# 此時若執行 子類別()建立實體物件時，一開始會先執行 將super裡面的多個模型引數帶到父類別nn.Sequential裡面，
+# 並呼叫 繼承父類別的CALL函數將 繼承nn.Sequential的初始化參數內容執行出來
+L()

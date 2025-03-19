@@ -20,17 +20,17 @@ from tensorflow.keras.applications import VGG16, ResNet50
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten
 
-# 1️⃣ 載入 VGG16 去掉分類層
+# 1️載入 VGG16 去掉分類層
 base_model = VGG16(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
 
-# 2️⃣ 定義 Sequential 模型
+# 2️定義 Sequential 模型
 model = Sequential()
 
-# 3️⃣ 添加 VGG16 作為基礎模型，並凍結層
+# 3️添加 VGG16 作為基礎模型，並凍結層
 model.add(base_model)  # Add VGG16 as base model (without top)
 base_model.trainable = False
 
-# 4️⃣ 添加新的分類層
+# 4️添加新的分類層
 model.add(Flatten())  # 攤平為一維
 model.add(Dense(128, activation="relu"))  # 隱藏層
 model.add(Dense(10, activation="softmax"))  # 10 類別輸出層
@@ -48,7 +48,7 @@ model.summary()
 
 
 # =============================================================================
-# ✅ 2. 使用 Keras 層的自定義功能
+# 2. 使用 Keras 層的自定義功能
 # 如果你需要更複雜的層設計，甚至想將這些層放在一個自定義類中，這樣可以讓你對層進行更高層次的控制。
 # =============================================================================
 
@@ -102,12 +102,12 @@ x = layers.Dense(128, activation='relu')(x)  # 隱藏層
 x = layers.Dense(10, activation='softmax')(x)  # 輸出層
 
 # 建立最終模型
-model = Model(inputs=base_model.input, outputs=x)
+model = Model(inputs=base_model.input, outputs=x) #注意 outputs=x 是從頭到尾經由 VGG16 base_model -> Flatten() -> Dense(128) -> Dense(10) 串接
 
 # 編譯模型
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-# 🔥 顯示模型架構
+# 顯示模型架構
 model.summary()
 # 在這個例子中，我們還是使用了函數式 API，但語法會稍微不同，層的定義和連接方式都可以清楚地控制。 
 
