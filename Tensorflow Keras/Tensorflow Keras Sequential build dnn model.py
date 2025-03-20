@@ -22,6 +22,7 @@ model = Sequential([
     ])
 model.summary()
 
+# Compile模型 定義後續反向傳播需要的 評估模型好壞損失函數
 model.compile(loss='mse', optimizer='adam')
 
 
