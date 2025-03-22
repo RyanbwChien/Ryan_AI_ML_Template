@@ -4,6 +4,7 @@ Created on Thu Mar 20 19:36:47 2025
 
 @author: user
 """
+import os
 import numpy as np
 import torch
 import torch.nn as nn
@@ -114,7 +115,10 @@ print("Output shape:", output.shape)
 # =============================================================================
 
 # 在外面先定義 transforms 模組，之後再套用到自訂義好的Dataset初始化參數transform裡面
-transforms =  v2.Compose([v2.Resize((128,128)), v2.ToTensor(),v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+transforms =  v2.Compose([v2.Resize((128,128)), 
+                          v2.ToTensor(),
+                          v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+
 dummy_input = torch.randn(1, 3, 128, 128)
 transforms(dummy_input)
 
@@ -132,8 +136,29 @@ transforms(dummy_input)
 path = kagglehub.dataset_download("puneet6060/intel-image-classification")        
 print("Path to dataset files:", path)
 
+train_path = r'C:\Users\user\.cache\kagglehub\datasets\puneet6060\intel-image-classification\versions\2\seg_train\seg_train'
+test_path = r'C:\Users\user\.cache\kagglehub\datasets\puneet6060\intel-image-classification\versions\2\seg_test\seg_test'
+classes = os.listdir(train_path)
 
+train_photo = []
+train_label = []
+test_photo = []
+test_label = []
 
+for split_set in [train_path, test_path]:
+    for class_ in classes:
+        photo_path = os.listdir(os.path.join(split_set,class_))
+        if split_set == train_path:
+            train_label.append([class_]*len(photo_path))
+        else:
+            test_label.append([class_]*len(photo_path))
+
+    if split_set == train_path:
+        train_photo = [ os.path.join(train_path,class_,i) for i in photo_path]
+    else:
+        test_photo = [ os.path.join(test_path, class_, i) for i in photo_path]
+
+        
 
 '''transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # 標準化'''
 # =============================================================================
@@ -158,3 +183,22 @@ print("Path to dataset files:", path)
 # mean=[0.485, 0.456, 0.406] 和 std=[0.229, 0.224, 0.225] 是 ImageNet 數據集的統計結果，反映了每個顏色通道（RGB）的均值和標準差。
 # 這些值被用來將新圖像標準化，使其與訓練預訓練模型時使用的數據一致，從而提高模型的預測準確性和穩定性。
 # =============================================================================
+
+class Torch_dataset(Dataset):
+    def __init__(self,X,y, transforms=None):
+        self.X = [np.array(Image.open(path)) for path in X]
+        self.y = y
+        
+    def __len__(self):
+        return(len(self.X ))
+    
+    def __getitem__(self,ind):
+        if transforms:
+            return(transforms(self.X[ind],self.y))
+        else:            
+             return(self.X[ind],self.y)      
+                   
+                   
+puneet6060_train_dataset = Torch_dataset(train_photo, train_label)        
+        
+        
