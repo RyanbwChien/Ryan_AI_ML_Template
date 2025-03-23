@@ -59,9 +59,10 @@ class SimpleUNet(nn.Module):
 
 # 定義擴散過程
 def q_sample(data, t, noise_level):
-    """將數據加入噪聲"""
-    return data * (1 - noise_level) + noise_level * torch.randn_like(data) #输入与传入参数size相同的满足标准正态分布的随机数字tensor
-
+    """根據時間步長 t 增加噪聲"""
+    noise_scale = noise_level * t  # 讓噪聲隨時間變化
+    return data * (1 - noise_scale) + noise_scale * torch.randn_like(data) #输入与传入参数size相同的满足标准正态分布的随机数字tensor
+    # torch.randn_like()是一个PyTorch 函数，它返回一个与输入张量大小相同的张量，其中填充了均值为0 方差为1 的正态分布的随机值
 def noise_prediction_loss(model, x_noisy, t, clean_data, noise_level):
     """計算損失：模型預測噪聲"""
     pred_noise = model(x_noisy)
@@ -99,12 +100,34 @@ def generate_samples(model, num_samples, input_dim, num_steps=1000, noise_level=
         samples = torch.randn(num_samples, input_dim).to(device)
 
         # 逐步去噪過程
+# =============================================================================
+#         2. 為何生成時需要從最大𝑇期開始逐步還原？
+#         擴散模型的生成過程是從完全的隨機噪聲開始，逐步還原成真實數據。這個過程遵循 逆向馬可夫鏈（Reverse Markov Chain），即：
+#         這個過程的核心思想：
+#         
+#         從純噪聲 xt 開始，因為擴散模型訓練時加噪聲的方式類似於模擬「數據分佈 → 高斯分佈」的過程，所以要從完全隨機噪聲開始生成。
+#         
+#         一步步去噪還原數據，在每個時間步 𝑡，用模型預測當前的噪聲，並從當前的 𝑥𝑡 中減去這個噪聲，還原出 𝑥𝑡−1​ 。
+#         最終 𝑥0 會變成接近原始數據分佈的樣本。
+#         這類似於用「逐步修正」的方式，從雜訊重建清晰圖像，而不是一次性生成。
+# =============================================================================
         for t in reversed(range(num_steps)):
             t_tensor = torch.full((num_samples,), t / num_steps).float().to(device)
             pred_noise = model(samples)
             samples = samples - noise_level * pred_noise
 
         return samples.cpu().numpy()
+
+
+# =============================================================================
+# 3. 為什麼不能一步到位生成？
+# 擴散模型不能直接「一步到位」生成數據，主要有幾個原因：
+# 去噪需要逐步修正：如果我們直接讓模型生成最終數據 𝑥0​
+#  ，而不是通過去噪過程，模型就需要學習一個複雜的映射（從隨機噪聲 → 真實數據），這比學習「局部去噪」困難得多。
+# 模型學到的是噪聲分佈，而不是直接的數據分佈：擴散模型訓練的本質是學習「不同時間步驟下的噪聲」，而不是直接學習最終的數據，因此它需要通過「去噪鏈」一步步還原數據。
+# 數據流形（Data Manifold）非線性變化：數據的分佈通常是高度非線性的，透過逐步修正比直接學習一個非線性函數來得更穩定。
+# =============================================================================
+
 
 # 設置參數
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
