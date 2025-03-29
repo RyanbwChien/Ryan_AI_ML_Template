@@ -31,7 +31,7 @@ data = torch.tensor(data, dtype=torch.float32)
 # =============================================================================
 
 
-# 定義U-Net結構（簡化版）
+# 定義    （簡化版）
 class SimpleUNet(nn.Module):
     def __init__(self, input_dim):
         super(SimpleUNet, self).__init__()
